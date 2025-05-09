@@ -1,4 +1,5 @@
 import streamlit as st
+import os
 from PIL import Image
 from helpers.ui import show_header, show_authors
 from helpers.file_io import load_image
@@ -6,7 +7,9 @@ from helpers.face_module import recognize_faces
 from helpers.hand_module import detect_hand_signal
 from helpers.yolo_module import apply_yolo
 from helpers.processing import apply_processing, functions_use_color
+from helpers.car_module import run_vehicle_detection
 from streamlit_webrtc import webrtc_streamer, VideoTransformerBase
+
 
 
 # Cấu hình giao diện
@@ -28,7 +31,8 @@ chapters = {
     "Chapter 9 – Hình thái học": ["Erosion", "Dilation", "Boundary", "Contour", "Convex Hull",
                                   "Defect Detect", "Hole Fill", "Connect Component", "Remove Small Rice"],
     "Face Detection": ["Nhận diện từ ảnh", "Nhận diện từ webcam"],
-    "Hand Signal Detection": ["Nhận diện tay từ webcam"]
+    "Hand Signal Detection": ["Nhận diện tay từ webcam"],
+    "Vehicle Detection": ["Nhận diện ô tô từ video"]
 }
 
 # Giao diện sidebar
@@ -85,3 +89,35 @@ elif selected_chapter == "Hand Signal Detection" and selected_function == "Nhậ
             return img
 
     webrtc_streamer(key="hand-detection", video_transformer_factory=HandDetectionTransformer)
+
+# Xử lý video: Nhận diện ô tô
+# elif selected_chapter == "Vehicle Detection" and selected_function == "Nhận diện ô tô từ video":
+#     st.warning("🚗 Tải video để nhận diện và đếm ô tô.")
+#     video_file = st.file_uploader("🎞️ Tải video", type=["mp4", "avi", "mov", "mkv"])
+#     if video_file:
+#         run_vehicle_detection(video_file)
+
+#         if os.path.exists("output_yolo_track.mp4") and os.path.getsize("output_yolo_track.mp4") > 0:
+#             st.subheader("🎯 Video đã xử lý")
+#             video_file = open("output_yolo_track.mp4", "rb")
+#             video_bytes = video_file.read()
+#             st.video(video_bytes)
+#             with open("output_yolo_track.mp4", "rb") as f:
+#                 st.download_button("⬇️ Tải video kết quả", data=f, file_name="result.mp4", mime="video/mp4")
+
+# Xử lý video: Nhận diện ô tô
+elif selected_chapter == "Vehicle Detection" and selected_function == "Nhận diện ô tô từ video":
+    st.warning("🚗 Tải video để nhận diện và đếm ô tô.")
+    video_file = st.file_uploader("🎞️ Tải video", type=["mp4", "avi", "mov", "mkv"])
+
+    if video_file:
+        st.subheader("🎯 Đang xử lý video...")
+        stframe = st.empty()  # khung để stream từng frame
+        run_vehicle_detection(video_file, stframe=stframe)
+
+        # Sau khi xử lý xong thì hiển thị nút tải xuống
+        if os.path.exists("output_yolo_track.mp4") and os.path.getsize("output_yolo_track.mp4") > 0:
+            with open("output_yolo_track.mp4", "rb") as f:
+                st.download_button("⬇️ Tải video kết quả", data=f, file_name="result.mp4", mime="video/mp4")
+        else:
+            st.error("❌ Không thể xử lý hoặc ghi video đầu ra.")
